@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MyWardrobe 👗</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#007bff">
+</head>
+<body>
+  <div class="container">
+    <h1>MyWardrobe 👗</h1>
+
+    <div id="loginSection">
+      <h2>Login</h2>
+      <input type="email" id="email" placeholder="Enter your email" />
+      <button id="loginBtn">Login</button>
+    </div>
+
+    <div id="appSection" style="display: none;">
+      <p>Logged in as: <span id="userEmail"></span></p>
+      <button id="logoutBtn" class="logout">Logout</button>
+
+      <div class="tabs">
+        <button id="wardrobeTab" class="active">👕 My Wardrobe</button>
+        <button id="wornTab">📅 What I Wore</button>
+      </div>
+
+      <!-- Wardrobe -->
+      <div id="wardrobeSection">
+        <h3>Add Dress</h3>
+        <input type="text" id="dressInput" placeholder="Enter dress name">
+        <button id="addDressBtn">Add</button>
+        <ul id="wardrobeList"></ul>
+      </div>
+
+      <!-- What I Wore -->
+      <div id="wornSection" style="display: none;">
+        <input type="date" id="dateInput">
+        <h3>Select dresses worn:</h3>
+        <div id="checkboxContainer"></div>
+        <button id="saveWornBtn">Save</button>
+
+        <h3>History</h3>
+        <ul id="historyList"></ul>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
