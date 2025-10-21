@@ -1,142 +1,166 @@
-// Login System
-const loginSection = document.getElementById("loginSection");
-const appSection = document.getElementById("appSection");
-const loginBtn = document.getElementById("loginBtn");
-const logoutBtn = document.getElementById("logoutBtn");
-const emailInput = document.getElementById("email");
-const userEmail = document.getElementById("userEmail");
+// Global variables
+let clothes = [];
+let history = [];
+let currentUser = localStorage.getItem("currentUser") || "";
 
-loginBtn.addEventListener("click", () => {
-  const email = emailInput.value.trim();
-  if (email) {
-    localStorage.setItem("loggedInUser", email);
-    showApp();
-  }
-});
-
-logoutBtn.addEventListener("click", () => {
-  localStorage.removeItem("loggedInUser");
-  location.reload();
-});
-
-function showApp() {
-  const email = localStorage.getItem("loggedInUser");
-  if (email) {
-    loginSection.style.display = "none";
-    appSection.style.display = "block";
-    userEmail.textContent = email;
-    loadWardrobe();
-    loadHistory();
-  }
-}
-showApp();
-
-// Wardrobe Section
-const dressInput = document.getElementById("dressInput");
-const addDressBtn = document.getElementById("addDressBtn");
-const wardrobeList = document.getElementById("wardrobeList");
-
-addDressBtn.addEventListener("click", () => {
-  const dress = dressInput.value.trim();
-  if (dress) {
-    const wardrobe = getWardrobe();
-    wardrobe.push(dress);
-    saveWardrobe(wardrobe);
-    dressInput.value = "";
-    loadWardrobe();
-  }
-});
-
-function getWardrobe() {
-  return JSON.parse(localStorage.getItem("wardrobe") || "[]");
-}
-function saveWardrobe(data) {
-  localStorage.setItem("wardrobe", JSON.stringify(data));
-}
-function loadWardrobe() {
-  const wardrobe = getWardrobe();
-  wardrobeList.innerHTML = "";
-  wardrobe.forEach((dress, index) => {
-    const li = document.createElement("li");
-    li.innerHTML = `${dress} <button onclick="deleteDress(${index})">❌</button>`;
-    wardrobeList.appendChild(li);
-  });
-  loadCheckboxes();
-}
-function deleteDress(index) {
-  const wardrobe = getWardrobe();
-  wardrobe.splice(index, 1);
-  saveWardrobe(wardrobe);
-  loadWardrobe();
-}
-
-// What I Wore
-const dateInput = document.getElementById("dateInput");
-const checkboxContainer = document.getElementById("checkboxContainer");
-const saveWornBtn = document.getElementById("saveWornBtn");
+// Element references
+const itemInput = document.getElementById("itemInput");
+const itemList = document.getElementById("itemList");
+const outfitSelection = document.getElementById("outfitSelection");
 const historyList = document.getElementById("historyList");
 
-function loadCheckboxes() {
-  const wardrobe = getWardrobe();
-  checkboxContainer.innerHTML = "";
-  wardrobe.forEach(dress => {
-    const label = document.createElement("label");
-    label.innerHTML = `<input type="checkbox" value="${dress}"> ${dress}`;
-    checkboxContainer.appendChild(label);
+// Login elements (created dynamically)
+const container = document.querySelector(".container");
+
+// --- LOGIN HANDLING ---
+function showLogin() {
+  container.innerHTML = `
+    <h1>👕 MyWardrobe Login</h1>
+    <input type="email" id="emailInput" placeholder="Enter your email" />
+    <button onclick="login()">Login</button>
+  `;
+}
+
+function login() {
+  const email = document.getElementById("emailInput").value.trim();
+  if (email === "") return alert("Please enter a valid email!");
+  currentUser = email;
+  localStorage.setItem("currentUser", currentUser);
+  renderApp();
+}
+
+function logout() {
+  localStorage.removeItem("currentUser");
+  location.reload();
+}
+
+// --- STORAGE HELPERS ---
+function getStorageKey(key) {
+  return `${key}_${currentUser}`;
+}
+
+function loadData() {
+  if (!currentUser) return;
+  clothes = JSON.parse(localStorage.getItem(getStorageKey("clothes"))) || [];
+  history = JSON.parse(localStorage.getItem(getStorageKey("history"))) || [];
+}
+
+function saveData() {
+  if (!currentUser) return;
+  localStorage.setItem(getStorageKey("clothes"), JSON.stringify(clothes));
+  localStorage.setItem(getStorageKey("history"), JSON.stringify(history));
+}
+
+// --- ITEM MANAGEMENT ---
+function addItem() {
+  const newItem = itemInput.value.trim();
+  if (newItem === "") return;
+  clothes.push(newItem);
+  saveData();
+  itemInput.value = "";
+  renderItems();
+}
+
+function deleteItem(index) {
+  clothes.splice(index, 1);
+  saveData();
+  renderItems();
+}
+
+// --- OUTFIT MANAGEMENT ---
+function saveOutfit() {
+  const selected = Array.from(document.querySelectorAll("#outfitSelection input:checked"))
+    .map(i => i.value);
+  if (selected.length === 0) return alert("Please select at least one item!");
+  const date = new Date().toLocaleDateString();
+  history.push({ date, outfit: selected });
+  saveData();
+  renderHistory();
+}
+
+// --- RENDERING FUNCTIONS ---
+function renderItems() {
+  itemList.innerHTML = "";
+  outfitSelection.innerHTML = "";
+
+  clothes.forEach((item, index) => {
+    // List with delete button
+    const li = document.createElement("li");
+    li.textContent = item + " ";
+    const delBtn = document.createElement("button");
+    delBtn.textContent = "❌";
+    delBtn.onclick = () => deleteItem(index);
+    li.appendChild(delBtn);
+    itemList.appendChild(li);
+
+    // Outfit checkbox
+    const checkbox = document.createElement("div");
+    checkbox.innerHTML = `<label><input type="checkbox" value="${item}"> ${item}</label>`;
+    outfitSelection.appendChild(checkbox);
   });
 }
 
-saveWornBtn.addEventListener("click", () => {
-  const date = dateInput.value;
-  if (!date) return alert("Select a date first!");
-
-  const selected = Array.from(checkboxContainer.querySelectorAll("input:checked")).map(c => c.value);
-  if (selected.length === 0) return alert("Select at least one dress!");
-
-  const history = JSON.parse(localStorage.getItem("history") || "[]");
-  history.push({ date, dresses: selected });
-  localStorage.setItem("history", JSON.stringify(history));
-  loadHistory();
-});
-
-function loadHistory() {
-  const history = JSON.parse(localStorage.getItem("history") || "[]");
+function renderHistory() {
   historyList.innerHTML = "";
-  history.forEach((item, index) => {
+  history.forEach((entry, index) => {
     const li = document.createElement("li");
-    li.innerHTML = `${item.date}: ${item.dresses.join(", ")} 
-      <button onclick="deleteHistory(${index})">🗑️</button>`;
+    li.textContent = `${entry.date}: ${entry.outfit.join(", ")}`;
+    const delBtn = document.createElement("button");
+    delBtn.textContent = "🗑️";
+    delBtn.onclick = () => deleteHistory(index);
+    li.appendChild(delBtn);
     historyList.appendChild(li);
   });
 }
+
 function deleteHistory(index) {
-  const history = JSON.parse(localStorage.getItem("history") || "[]");
   history.splice(index, 1);
-  localStorage.setItem("history", JSON.stringify(history));
-  loadHistory();
+  saveData();
+  renderHistory();
 }
 
-// Tabs
-const wardrobeTab = document.getElementById("wardrobeTab");
-const wornTab = document.getElementById("wornTab");
-const wardrobeSection = document.getElementById("wardrobeSection");
-const wornSection = document.getElementById("wornSection");
+// --- APP RENDER ---
+function renderApp() {
+  loadData();
 
-wardrobeTab.addEventListener("click", () => {
-  wardrobeSection.style.display = "block";
-  wornSection.style.display = "none";
-  wardrobeTab.classList.add("active");
-  wornTab.classList.remove("active");
-});
+  container.innerHTML = `
+    <h1>👚 MyWardrobe</h1>
+    <p>Logged in as <strong>${currentUser}</strong></p>
+    <button onclick="logout()">Logout</button>
 
-wornTab.addEventListener("click", () => {
-  wardrobeSection.style.display = "none";
-  wornSection.style.display = "block";
-  wardrobeTab.classList.remove("active");
-  wornTab.classList.add("active");
-});
+    <div class="section">
+      <h2>Add Clothing Item</h2>
+      <input type="text" id="itemInput" placeholder="e.g. Blue Shirt" />
+      <button onclick="addItem()">Add</button>
+      <ul id="itemList"></ul>
+    </div>
 
-// Register service worker for PWA
-if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("service-worker.js");
+    <div class="section">
+      <h2>Record Today’s Outfit</h2>
+      <div id="outfitSelection"></div>
+      <button onclick="saveOutfit()">Save Outfit</button>
+    </div>
+
+    <div class="section">
+      <h2>Outfit History</h2>
+      <ul id="historyList"></ul>
+    </div>
+  `;
+
+  // Reconnect DOM references
+  window.itemInput = document.getElementById("itemInput");
+  window.itemList = document.getElementById("itemList");
+  window.outfitSelection = document.getElementById("outfitSelection");
+  window.historyList = document.getElementById("historyList");
+
+  renderItems();
+  renderHistory();
 }
+
+// --- INITIAL LOAD ---
+if (currentUser) {
+  renderApp();
+} else {
+  showLogin();
+}
+
